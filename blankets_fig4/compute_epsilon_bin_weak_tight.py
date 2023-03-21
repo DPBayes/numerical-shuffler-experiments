@@ -63,21 +63,26 @@ def get_omega(n, gamma,k, nx=int(1E6), L=1000):
 
             # Probabilities for N_2|B (N_2|B ~ Bin(B-i,1/(k-1)) + Bern(gamma/k))
             N2=np.zeros(nB-i+2)
-            for j in range(0,nB-i+1):
-                Ntemp = scipy.special.gammaln((nB+1)-i+1)-scipy.special.gammaln((nB+1)-i-j+1)-scipy.special.gammaln(j+1) + j*np.log(p2) + ((nB+1)-i-j)*np.log(1-p2)
-                N2[j] += np.exp(Ntemp)
-                tot_prob_per_B+= np.exp(Ntemp)
+            if k==2:
+                N2[-1] = 1
+            else:
+                for j in range(0,nB-i+2):
+                    Ntemp = scipy.special.gammaln((nB+1)-i+1)-scipy.special.gammaln((nB+1)-i-j+1)-scipy.special.gammaln(j+1) + j*np.log(p2) + ((nB+1)-i-j)*np.log(1-p2)
+                    N2[j] += np.exp(Ntemp)
+                    tot_prob_per_B+= np.exp(Ntemp)
 
             N2s.append(N2)
 
 
-        for i in range(0,nB+1):
-            for j in range(0,nB-i+1):
+        N2 = np.ones(1)
+        N2s.append(N2)
+        for i in range(0,nB+2):
+            for j in range(0,nB-i+2):
                 nom = (1-gamma)*i + (gamma/k)*nB
                 denom = (1-gamma)*j + (gamma/k)*nB
 
                 sum_nBN1N2 += B[nB-i_min]*N1[i]*N2s[i][j]
-                if denom != 0:# and nom != 0:
+                if denom != 0 and nom != 0:
                     Wz.append(np.log(nom/denom))
                     Fz.append(B[nB-i_min]*N1[i]*N2s[i][j])
                 else:
@@ -88,6 +93,7 @@ def get_omega(n, gamma,k, nx=int(1E6), L=1000):
     print('len(Wz) : ' + str(len(Wz)))
 
     print(' sum Fz: ' + str(np.sum(np.array(Fz))))
+    print(' sum_Wz_zero :' + str(sum_Wz_zero))
 
     dx=2*L/nx
     grid_x=np.linspace(-L,L-dx,nx)
@@ -136,6 +142,8 @@ def get_omega(n, gamma,k, nx=int(1E6), L=1000):
     T1=(np.exp(k*alpha_plus)  )
     T2=(np.exp(k*alpha_minus) )
     error_term = (T1+T2)*(np.exp(-lambd*L)/(1-np.exp(-2*lambd*L)))
+    # Add probability of cases where Wz is not finite
+    error_term += sum_Wz_zero
     print('error_term: ' + str(error_term))
 
     print('sum omega: ' + str(np.sum(omega_y)))
